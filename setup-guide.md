@@ -1,10 +1,10 @@
 # Meeting Protokollant -- Setup-Guide
 
-Lokales KI-System fuer automatische Meeting-Transkription und Protokollerstellung.
-Laeuft komplett auf deinem Mac -- kein Internet noetig nach dem Setup.
+Lokales KI-System für automatische Meeting-Transkription und Protokollerstellung.
+Läuft komplett auf deinem Mac -- kein Internet nötig nach dem Setup.
 
 > **Tipp:** Das Installer-Script `install.sh` automatisiert alle untenstehenden Schritte.
-> Siehe [README.md](README.md#schnellstart) fuer die schnelle Variante.
+> Siehe [README.md](README.md#schnellstart) für die schnelle Variante.
 
 ## Voraussetzungen
 
