@@ -19,6 +19,7 @@ import json
 import logging
 import subprocess
 import shutil
+from datetime import date
 from pathlib import Path
 
 import requests
@@ -396,12 +397,16 @@ def summarize_with_ollama(text: str) -> str:
     system_instruction = (
         "Du bist ein hocheffizienter Protokollfuehrer in einem Schweizer Unternehmen. "
         "Das folgende Transkript wurde aus dem Schweizerdeutschen ins Hochdeutsche uebersetzt. "
-        "Erstelle ein professionelles Protokoll mit folgenden Abschnitten:\n"
-        "1. THEMA: Um was ging es primaer?\n"
-        "2. TEILNEHMER: Wer hat gesprochen?\n"
-        "3. ZUSAMMENFASSUNG: Die wichtigsten Punkte in 3-5 Saetzen.\n"
-        "4. ENTSCHEIDUNGEN: Was wurde beschlossen?\n"
-        "5. ACTIONPOINTS: Wer muss was bis wann tun? (Klar aufgelistet)\n\n"
+        "Erstelle ein professionelles Protokoll im Markdown-Format.\n\n"
+        "WICHTIG: Beginne die Antwort mit einer einzelnen Zeile im Format:\n"
+        "TITEL: <kurzer beschreibender Titel, max 8 Woerter>\n\n"
+        "Danach folgen diese Abschnitte als Markdown mit ## Ueberschriften:\n"
+        "## Thema\nUm was ging es primaer?\n\n"
+        "## Teilnehmer\nWer hat gesprochen?\n\n"
+        "## Zusammenfassung\nDie wichtigsten Punkte in 3-5 Saetzen.\n\n"
+        "## Entscheidungen\nWas wurde beschlossen? Als Aufzaehlung.\n\n"
+        "## Actionpoints\nWer muss was bis wann tun? Als Checkliste:\n"
+        "- [ ] Person: Aufgabe bis Termin\n\n"
         "WICHTIG: Verwende Schweizer Rechtschreibung (kein ss statt ss). "
         "Waehrungen sind in CHF anzugeben."
     )
@@ -465,16 +470,24 @@ def process_audio_file(audio_path: Path, processed: set) -> bool:
         # Schritt 3: KI-Zusammenfassung
         summary = summarize_with_ollama(text)
 
-        # Schritt 4: Protokoll speichern
-        final_file = OUTPUT_DIR / f"{base_name}_Protokoll.txt"
+        # Schritt 4: Kurztitel aus Ollama-Antwort extrahieren
+        title = base_name
+        summary_body = summary
+        for line in summary.splitlines():
+            stripped = line.strip()
+            if stripped.upper().startswith("TITEL:"):
+                title = stripped.split(":", 1)[1].strip()
+                summary_body = summary.replace(line, "", 1).lstrip("\n")
+                break
+
+        # Schritt 5: Protokoll als Markdown speichern
+        today = date.today().isoformat()
+        final_file = OUTPUT_DIR / f"{base_name}_Protokoll.md"
         final_file.write_text(
-            "========================================\n"
-            "KI-PROTOKOLL & ACTIONPOINTS\n"
-            "========================================\n\n"
-            f"{summary}\n\n\n"
-            "========================================\n"
-            "DETAILLIERTES TRANSKRIPT\n"
-            "========================================\n\n"
+            f"# {today} – {title}\n\n"
+            f"{summary_body}\n\n"
+            "---\n\n"
+            "## Detailliertes Transkript\n\n"
             f"{text}\n",
             encoding="utf-8",
         )
