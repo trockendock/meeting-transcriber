@@ -19,6 +19,22 @@ Lokales KI-System für automatische Meeting-Transkription und Protokollerstellun
 
 ## Schnellstart
 
+### Automatisch (empfohlen)
+
+```bash
+git clone https://github.com/trockendock/meeting-transcriber.git
+cd meeting-transcriber
+chmod +x install.sh
+./install.sh
+```
+
+Das Installer-Script richtet alles automatisch ein: Homebrew-Pakete, Python, Virtual Environment, pip-Pakete, Ollama und Konfiguration. Es ist sicher mehrfach ausführbar.
+
+### Manuell
+
+<details>
+<summary>Manuelle Installation (Klick zum Aufklappen)</summary>
+
 ```bash
 # 1. Abhängigkeiten
 brew update
@@ -51,6 +67,8 @@ python main.py
 ```
 
 > **Tipp:** Damit `python` dauerhaft funktioniert, füge `eval "$(pyenv init -)"` in deine `~/.zshrc` ein.
+
+</details>
 
 Beim ersten Start wird automatisch das Schweizerdeutsch-Modell ([Flurin17/whisper-large-v3-turbo-swiss-german](https://huggingface.co/Flurin17/whisper-large-v3-turbo-swiss-german)) heruntergeladen und ins MLX-Format konvertiert. Danach läuft alles offline.
 

@@ -3,6 +3,9 @@
 Lokales KI-System fuer automatische Meeting-Transkription und Protokollerstellung.
 Laeuft komplett auf deinem Mac -- kein Internet noetig nach dem Setup.
 
+> **Tipp:** Das Installer-Script `install.sh` automatisiert alle untenstehenden Schritte.
+> Siehe [README.md](README.md#schnellstart) fuer die schnelle Variante.
+
 ## Voraussetzungen
 
 - **Mac mit Apple Silicon** (M1, M2, M3 oder M4)
