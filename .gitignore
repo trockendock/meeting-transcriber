@@ -1,0 +1,37 @@
+# Environment & Secrets
+.env
+*.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# MLX-Modelle (zu gross fuer Git)
+models/
+
+# Laufzeit-Dateien
+system_log.txt
+startup_debug.log
+launchd_out.log
+launchd_err.log
+processed_files.json
+
+# Audiodateien & Output
+input/
+output/
+archive/
+temp/
+failed/
+
+# macOS
+.DS_Store
+._*
+
+# IDE
+.vscode/
+.idea/
+
+# Claude
+.claude/
