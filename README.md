@@ -1,6 +1,6 @@
 # Meeting Transcriber
 
-Lokales KI-System für automatische Meeting-Transkription und Protokollerstellung auf Apple Silicon Macs. Läuft komplett offline - kein Byte verlässt das Gerät.
+Lokales KI-System für automatische Meeting-Transkription und Protokollerstellung auf Apple Silicon Macs. Speziell optimiert für Schweizer Dialekte – transkribiert Schweizerdeutsch direkt ins Hochdeutsche. Läuft komplett offline - kein Byte verlässt das Gerät.
 
 ## Was es tut
 
