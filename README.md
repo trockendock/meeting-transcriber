@@ -1,6 +1,6 @@
 # Meeting Transcriber
 
-Lokales KI-System für automatische Meeting-Transkription und Protokollerstellung auf Apple Silicon Macs. Läuft komplett offline -- kein Byte verlässt dein Gerät.
+Lokales KI-System für automatische Meeting-Transkription und Protokollerstellung auf Apple Silicon Macs. Läuft komplett offline - kein Byte verlässt das Gerät.
 
 ## Was es tut
 
@@ -66,7 +66,7 @@ cp .env.example .env
 python main.py
 ```
 
-> **Tipp:** Damit `python` dauerhaft funktioniert, füge `eval "$(pyenv init -)"` in deine `~/.zshrc` ein.
+> **Tipp:** Damit `python` dauerhaft funktioniert, füge `eval "$(pyenv init -)"` in `~/.zshrc` ein.
 
 </details>
 
