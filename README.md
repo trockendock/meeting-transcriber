@@ -1,10 +1,10 @@
 # Meeting Transcriber
 
-Lokales KI-System fuer automatische Meeting-Transkription und Protokollerstellung auf Apple Silicon Macs. Laeuft komplett offline -- kein Byte verlaesst dein Geraet.
+Lokales KI-System für automatische Meeting-Transkription und Protokollerstellung auf Apple Silicon Macs. Läuft komplett offline -- kein Byte verlässt dein Gerät.
 
 ## Was es tut
 
-1. **Ordner ueberwachen:** Watchdog erkennt neue Audiodateien im `input/`-Ordner
+1. **Ordner überwachen:** Watchdog erkennt neue Audiodateien im `input/`-Ordner
 2. **Transkription:** MLX Whisper transkribiert Schweizerdeutsch → Hochdeutsch direkt auf der Apple GPU
 3. **Sprechererkennung** (optional): Pyannote erkennt, wer was gesagt hat
 4. **KI-Protokoll:** Ollama/Mistral NeMo erstellt ein strukturiertes Meeting-Protokoll mit Thema, Zusammenfassung, Entscheidungen und Actionpoints
@@ -34,7 +34,7 @@ python -m venv venv && source venv/bin/activate
 
 # 3. Pakete installieren
 pip install mlx-whisper python-dotenv watchdog requests
-pip install transformers torch  # fuer Auto-Konvertierung CH-Modell
+pip install transformers torch  # für Auto-Konvertierung CH-Modell
 
 # 4. Konfiguration
 cp .env.example .env
@@ -44,7 +44,7 @@ cp .env.example .env
 python main.py
 ```
 
-Beim ersten Start wird automatisch das Schweizerdeutsch-Modell ([Flurin17/whisper-large-v3-turbo-swiss-german](https://huggingface.co/Flurin17/whisper-large-v3-turbo-swiss-german)) heruntergeladen und ins MLX-Format konvertiert. Danach laeuft alles offline.
+Beim ersten Start wird automatisch das Schweizerdeutsch-Modell ([Flurin17/whisper-large-v3-turbo-swiss-german](https://huggingface.co/Flurin17/whisper-large-v3-turbo-swiss-german)) heruntergeladen und ins MLX-Format konvertiert. Danach läuft alles offline.
 
 ## Verwendung
 
@@ -67,9 +67,9 @@ output/meeting_Protokoll.txt
 |---|---|---|
 | `SSD_PATH` | `/Volumes/ExtSSD/WhisperSystem` | Projektordner auf der SSD |
 | `WHISPER_MODEL` | `auto` | `auto` = CH-Modell mit Fallback auf Deutsch |
-| `OLLAMA_MODEL` | `mistral-nemo` | Modell fuer die Zusammenfassung |
+| `OLLAMA_MODEL` | `mistral-nemo` | Modell für die Zusammenfassung |
 | `ENABLE_DIARIZATION` | `false` | Sprechererkennung aktivieren |
-| `HF_TOKEN` | - | HuggingFace Token (nur fuer Diarization) |
+| `HF_TOKEN` | - | HuggingFace Token (nur für Diarization) |
 
 ## Ordnerstruktur
 
@@ -79,7 +79,7 @@ WhisperSystem/
 ├── output/         # Fertige Protokolle
 ├── archive/        # Verarbeitete Audiodateien
 ├── failed/         # Fehlgeschlagene Dateien
-├── temp/           # Zwischendateien (werden aufgeraeumt)
+├── temp/           # Zwischendateien (werden aufgeräumt)
 ├── models/         # Konvertierte MLX-Modelle
 ├── main.py         # Hauptskript
 ├── .env            # Konfiguration
@@ -88,25 +88,25 @@ WhisperSystem/
 
 ## Tech Stack
 
-| Komponente | Zweck | Laeuft auf |
+| Komponente | Zweck | Läuft auf |
 |---|---|---|
 | [mlx-whisper](https://pypi.org/project/mlx-whisper/) | Transkription (ASR) | Apple GPU (MLX) |
 | [Flurin17/whisper-large-v3-turbo-swiss-german](https://huggingface.co/Flurin17/whisper-large-v3-turbo-swiss-german) | Schweizerdeutsch-Erkennung | - |
 | [Ollama](https://ollama.com) + Mistral NeMo | Zusammenfassung & Protokoll | Apple GPU |
 | [Pyannote](https://github.com/pyannote/pyannote-audio) | Sprechererkennung (optional) | CPU/GPU |
-| [Watchdog](https://github.com/gorakhargosh/watchdog) | Ordnerueberwachung | CPU |
+| [Watchdog](https://github.com/gorakhargosh/watchdog) | Ordnerüberwachung | CPU |
 
 ## Detaillierter Setup-Guide
 
-Siehe [setup-guide.md](setup-guide.md) fuer:
-- Schritt-fuer-Schritt Installation
+Siehe [setup-guide.md](setup-guide.md) für:
+- Schritt-für-Schritt Installation
 - Automator / Launch Agent Konfiguration
 - Troubleshooting
 - Alternative Schweizerdeutsch-Modelle
 
 ## Datenschutz
 
-Alles laeuft lokal. Internet wird nur einmalig beim Setup benoetigt (Modelle herunterladen). Danach: Kabel raus, alles funktioniert weiter. Keine Daten verlassen das Geraet.
+Alles läuft lokal. Internet wird nur einmalig beim Setup benötigt (Modelle herunterladen). Danach: Kabel raus, alles funktioniert weiter. Keine Daten verlassen das Gerät.
 
 ## Lizenz
 
