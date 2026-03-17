@@ -22,16 +22,31 @@ brew update
 # Pyenv fuer update-sichere Python-Version
 brew install pyenv
 
+# FFmpeg installieren (wird fuer Audio-Verarbeitung benoetigt)
+brew install ffmpeg
+
 # Python 3.11 installieren (stabil fuer ML-Pakete)
 pyenv install 3.11.9
+
+# pyenv in der aktuellen Shell aktivieren
+eval "$(pyenv init -)"
 
 # Ollama installieren (lokale KI-Engine)
 brew install --cask ollama
 ```
 
+> **Wichtig:** Damit der `python`-Befehl dauerhaft funktioniert, fuege diese Zeile in deine `~/.zshrc` ein:
+> ```bash
+> echo 'eval "$(pyenv init -)"' >> ~/.zshrc
+> ```
+
 **Ollama starten:** Oeffne die Ollama-App einmal. Sie laeuft danach im Hintergrund.
+Du erkennst es am Llama-Icon in der Menüleiste oben rechts.
 
 ```bash
+# Ollama starten (falls noch nicht offen)
+open -a Ollama
+
 # Zusammenfassungs-Modell herunterladen (~4 GB)
 ollama pull mistral-nemo
 ```
@@ -263,6 +278,23 @@ pip install pyannote.audio
 # ENABLE_DIARIZATION=true
 # HF_TOKEN=hf_dein_token
 ```
+
+### "command not found: python" nach pyenv install
+```bash
+# pyenv in der Shell aktivieren
+eval "$(pyenv init -)"
+
+# Dauerhaft in ~/.zshrc eintragen
+echo 'eval "$(pyenv init -)"' >> ~/.zshrc
+```
+
+### "Could not load libtorchcodec" / FFmpeg-Warnungen
+```bash
+# FFmpeg installieren
+brew install ffmpeg
+```
+Diese Warnung ist nicht kritisch -- die Transkription funktioniert auch ohne.
+Aber fuer beste Audio-Kompatibilitaet sollte FFmpeg installiert sein.
 
 ### "Kein Sound erkannt / Leeres Transkript"
 - Unterstuetzte Formate: MP3, WAV, M4A, AAC, FLAC, OGG, WMA

@@ -21,9 +21,15 @@ Lokales KI-System für automatische Meeting-Transkription und Protokollerstellun
 
 ```bash
 # 1. Abhängigkeiten
-brew install pyenv
+brew update
+brew install pyenv ffmpeg
 brew install --cask ollama
 pyenv install 3.11.9
+eval "$(pyenv init -)"   # pyenv in der Shell aktivieren
+
+# Ollama starten (Menüleisten-Icon muss sichtbar sein!)
+open -a Ollama
+# Zusammenfassungs-Modell herunterladen (~4 GB)
 ollama pull mistral-nemo
 
 # 2. Projekt einrichten (Pfad anpassen!)
@@ -43,6 +49,8 @@ cp .env.example .env
 # 5. Starten
 python main.py
 ```
+
+> **Tipp:** Damit `python` dauerhaft funktioniert, füge `eval "$(pyenv init -)"` in deine `~/.zshrc` ein.
 
 Beim ersten Start wird automatisch das Schweizerdeutsch-Modell ([Flurin17/whisper-large-v3-turbo-swiss-german](https://huggingface.co/Flurin17/whisper-large-v3-turbo-swiss-german)) heruntergeladen und ins MLX-Format konvertiert. Danach läuft alles offline.
 

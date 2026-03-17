@@ -159,6 +159,7 @@ def convert_ch_model_to_mlx() -> bool:
 
     try:
         import numpy as np
+        import torch
         import mlx.core as mx
         from transformers import WhisperForConditionalGeneration, WhisperProcessor
 
@@ -174,7 +175,7 @@ def convert_ch_model_to_mlx() -> bool:
         state_dict = model.state_dict()
         mlx_weights = {}
         for key, tensor in state_dict.items():
-            np_array = tensor.cpu().numpy()
+            np_array = tensor.cpu().to(torch.float32).numpy()
             mlx_weights[key] = mx.array(np_array)
 
         # Gewichte speichern
