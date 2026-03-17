@@ -119,7 +119,7 @@ WhisperSystem/
 |---|---|---|
 | [mlx-whisper](https://pypi.org/project/mlx-whisper/) | Transkription (ASR) | Apple GPU (MLX) |
 | [Flurin17/whisper-large-v3-turbo-swiss-german](https://huggingface.co/Flurin17/whisper-large-v3-turbo-swiss-german) | Schweizerdeutsch-Erkennung | - |
-| [Ollama](https://ollama.com) + Mistral NeMo | Zusammenfassung & Protokoll | Apple GPU |
+| [Ollama](https://ollama.com) + [Mistral NeMo](https://ollama.com/library/mistral-nemo) | Zusammenfassung & Protokoll | Apple GPU |
 | [Pyannote](https://github.com/pyannote/pyannote-audio) | Sprechererkennung (optional) | CPU/GPU |
 | [Watchdog](https://github.com/gorakhargosh/watchdog) | Ordnerüberwachung | CPU |
 
