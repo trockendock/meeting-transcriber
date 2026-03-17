@@ -77,14 +77,15 @@ Beim ersten Start wird automatisch das Schweizerdeutsch-Modell ([Flurin17/whispe
 Audiodatei (MP3, WAV, M4A, AAC, FLAC) in den `input/`-Ordner kopieren. Das Protokoll erscheint automatisch in `output/`.
 
 ```
-output/meeting_Protokoll.txt
-├── KI-PROTOKOLL & ACTIONPOINTS
-│   ├── Thema
-│   ├── Teilnehmer
-│   ├── Zusammenfassung
-│   ├── Entscheidungen
-│   └── Actionpoints
-└── DETAILLIERTES TRANSKRIPT
+output/meeting_Protokoll.md
+├── # 2026-03-17 – KI-generierter Titel
+├── ## Thema
+├── ## Teilnehmer
+├── ## Zusammenfassung
+├── ## Entscheidungen
+├── ## Actionpoints
+│   └── - [ ] Person: Aufgabe bis Termin
+└── ## Detailliertes Transkript
 ```
 
 ## Konfiguration (.env)
