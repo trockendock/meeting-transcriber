@@ -143,6 +143,81 @@ def notify_macos(title: str, message: str):
 # 4. MODELL-KONVERTIERUNG (CH-WHISPER -> MLX)
 # ==========================================
 
+def _hf_to_mlx_key(key: str) -> "str | None":
+    """
+    Benennt HuggingFace Whisper Gewicht-Keys in mlx_whisper Keys um.
+    Gibt None zurueck fuer Keys die kein mlx_whisper-Aequivalent haben.
+    """
+    import re
+
+    # Top-level fixe Mappings
+    fixed = {
+        "encoder.embed_positions.weight": "encoder.positional_embedding",
+        "encoder.layer_norm.weight":      "encoder.ln_post.weight",
+        "encoder.layer_norm.bias":        "encoder.ln_post.bias",
+        "decoder.embed_positions.weight": "decoder.positional_embedding",
+        "decoder.embed_tokens.weight":    "decoder.token_embedding.weight",
+        "decoder.layer_norm.weight":      "decoder.ln.weight",
+        "decoder.layer_norm.bias":        "decoder.ln.bias",
+    }
+    if key in fixed:
+        return fixed[key]
+
+    # Encoder conv-Schichten unveraendert uebernehmen
+    if re.match(r"encoder\.conv\d\.", key):
+        return key
+
+    # Encoder blocks
+    m = re.match(r"encoder\.layers\.(\d+)\.(.+)", key)
+    if m:
+        idx, rest = m.group(1), m.group(2)
+        mapped = _block_key(rest, cross=False)
+        return f"encoder.blocks.{idx}.{mapped}" if mapped else None
+
+    # Decoder blocks
+    m = re.match(r"decoder\.layers\.(\d+)\.(.+)", key)
+    if m:
+        idx, rest = m.group(1), m.group(2)
+        mapped = _block_key(rest, cross=True)
+        return f"decoder.blocks.{idx}.{mapped}" if mapped else None
+
+    return None  # Unbekannte / PEFT-spezifische Keys ignorieren
+
+
+def _block_key(key: str, cross: bool) -> "str | None":
+    """Mappt Block-Level Keys von HuggingFace auf mlx_whisper."""
+    table = {
+        "self_attn.q_proj.weight":     "attn.query.weight",
+        "self_attn.q_proj.bias":       "attn.query.bias",
+        "self_attn.k_proj.weight":     "attn.key.weight",
+        "self_attn.v_proj.weight":     "attn.value.weight",
+        "self_attn.v_proj.bias":       "attn.value.bias",
+        "self_attn.out_proj.weight":   "attn.out.weight",
+        "self_attn.out_proj.bias":     "attn.out.bias",
+        "self_attn_layer_norm.weight": "attn_ln.weight",
+        "self_attn_layer_norm.bias":   "attn_ln.bias",
+        "fc1.weight":                  "mlp.0.weight",
+        "fc1.bias":                    "mlp.0.bias",
+        "fc2.weight":                  "mlp.2.weight",
+        "fc2.bias":                    "mlp.2.bias",
+        "final_layer_norm.weight":     "mlp_ln.weight",
+        "final_layer_norm.bias":       "mlp_ln.bias",
+    }
+    if cross:
+        table.update({
+            "encoder_attn.q_proj.weight":     "cross_attn.query.weight",
+            "encoder_attn.q_proj.bias":       "cross_attn.query.bias",
+            "encoder_attn.k_proj.weight":     "cross_attn.key.weight",
+            "encoder_attn.v_proj.weight":     "cross_attn.value.weight",
+            "encoder_attn.v_proj.bias":       "cross_attn.value.bias",
+            "encoder_attn.out_proj.weight":   "cross_attn.out.weight",
+            "encoder_attn.out_proj.bias":     "cross_attn.out.bias",
+            "encoder_attn_layer_norm.weight": "cross_attn_ln.weight",
+            "encoder_attn_layer_norm.bias":   "cross_attn_ln.bias",
+        })
+    return table.get(key)
+
+
 def convert_ch_model_to_mlx() -> bool:
     """
     Konvertiert das Flurin17 Schweizerdeutsch-Modell von PyTorch ins MLX-Format.
@@ -159,15 +234,51 @@ def convert_ch_model_to_mlx() -> bool:
     log.info("  Dies dauert ca. 3-5 Minuten und braucht einmalig Internet.")
 
     try:
+        import json as _json
+        import torch
         import mlx.core as mx
-        from mlx_whisper.convert import convert as mlx_convert
+        from transformers import WhisperForConditionalGeneration, WhisperProcessor
 
+        # Modell laden – model.model (nicht model) ueberspringt den PEFT-Wrapper
+        # und liefert Keys ohne fuehrendes "model." Praefix
+        log.info("  [1/3] Lade Modell von HuggingFace...")
+        hf_model = WhisperForConditionalGeneration.from_pretrained(CH_MODEL_HF)
+        processor = WhisperProcessor.from_pretrained(CH_MODEL_HF)
+        inner = hf_model.model  # WhisperModel (ohne PEFT-Wrapper)
+
+        log.info("  [2/3] Konvertiere Gewichte (HF-Keys -> mlx_whisper-Keys)...")
         CH_MODEL_LOCAL.mkdir(parents=True, exist_ok=True)
+        mlx_weights = {}
+        skipped = 0
+        for hf_key, tensor in inner.state_dict().items():
+            mlx_key = _hf_to_mlx_key(hf_key)
+            if mlx_key:
+                mlx_weights[mlx_key] = mx.array(
+                    tensor.cpu().to(torch.float32).numpy()
+                )
+            else:
+                skipped += 1
+        log.info(f"    {len(mlx_weights)} Keys konvertiert, {skipped} ignoriert.")
+        mx.savez(str(CH_MODEL_LOCAL / "weights.npz"), **mlx_weights)
 
-        # mlx_whisper.convert uebernimmt das gesamte Key-Mapping
-        # (HuggingFace -> OpenAI-Whisper-Format) inkl. PEFT-Modellen.
-        log.info("  [1/1] Konvertiere mit mlx_whisper.convert (HF -> MLX)...")
-        mlx_convert(CH_MODEL_HF, str(CH_MODEL_LOCAL), dtype=mx.float16)
+        log.info("  [3/3] Speichere Konfiguration und Tokenizer...")
+        processor.save_pretrained(str(CH_MODEL_LOCAL))
+        hf_cfg = hf_model.config.to_dict()
+        mlx_cfg = {
+            "n_mels":        hf_cfg.get("num_mel_bins", 80),
+            "n_audio_ctx":   hf_cfg.get("max_source_positions", 1500),
+            "n_audio_state": hf_cfg.get("d_model", 1024),
+            "n_audio_head":  hf_cfg.get("encoder_attention_heads", 16),
+            "n_audio_layer": hf_cfg.get("encoder_layers", 32),
+            "n_vocab":       hf_cfg.get("vocab_size", 51866),
+            "n_text_ctx":    hf_cfg.get("max_target_positions", 448),
+            "n_text_state":  hf_cfg.get("d_model", 1024),
+            "n_text_head":   hf_cfg.get("decoder_attention_heads", 16),
+            "n_text_layer":  hf_cfg.get("decoder_layers", 32),
+        }
+        (CH_MODEL_LOCAL / "config.json").write_text(
+            _json.dumps(mlx_cfg, indent=2), encoding="utf-8"
+        )
 
         log.info(f"  Konvertierung abgeschlossen! Modell unter: {CH_MODEL_LOCAL}")
         notify_macos("Meeting Protokollant", "CH-Modell erfolgreich konvertiert!")
@@ -176,7 +287,7 @@ def convert_ch_model_to_mlx() -> bool:
     except ImportError as e:
         missing = str(e).split("'")[-2] if "'" in str(e) else str(e)
         log.warning(f"  Konvertierung nicht moeglich: '{missing}' fehlt.")
-        log.warning(f"  Installieren mit: pip install mlx-whisper transformers torch")
+        log.warning(f"  Installieren mit: pip install transformers torch")
         log.warning(f"  Nutze Fallback-Modell: {FALLBACK_MODEL}")
         return False
     except Exception as e:
