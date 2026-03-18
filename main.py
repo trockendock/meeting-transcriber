@@ -455,7 +455,26 @@ def diarize_audio(audio_path: Path) -> list:
     """
     Erkennt Sprecher in einer Audiodatei.
     Gibt eine Liste von (start, end, speaker) Tupeln zurueck.
+    Pyannote benoetigt mindestens ~12 Sekunden Audio (chunk-Grenze).
     """
+    import wave, contextlib, subprocess
+    # Dauer pruefen – Pyannote schlaegt bei < ~10s fehl (chunk-size Mismatch)
+    try:
+        result = subprocess.run(
+            ["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", str(audio_path)],
+            capture_output=True, text=True, timeout=10
+        )
+        duration = float(result.stdout.strip())
+        if duration < 12.0:
+            log.warning(
+                f"Sprechererkennung uebersprungen: Datei zu kurz ({duration:.1f}s, "
+                f"Minimum: 12s). Fahre ohne Sprecher-Labels fort."
+            )
+            return []
+    except Exception:
+        pass  # Dauer nicht ermittelbar – trotzdem versuchen
+
     try:
         pipeline = get_diarization_pipeline()
         diarization = pipeline(str(audio_path))
