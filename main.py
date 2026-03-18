@@ -429,7 +429,7 @@ def get_diarization_pipeline():
         from pyannote.audio import Pipeline
         _diarization_pipeline = Pipeline.from_pretrained(
             "pyannote/speaker-diarization-3.1",
-            use_auth_token=HF_TOKEN,
+            token=HF_TOKEN,
         )
     return _diarization_pipeline
 
