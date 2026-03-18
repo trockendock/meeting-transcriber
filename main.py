@@ -159,55 +159,15 @@ def convert_ch_model_to_mlx() -> bool:
     log.info("  Dies dauert ca. 3-5 Minuten und braucht einmalig Internet.")
 
     try:
-        import numpy as np
-        import torch
         import mlx.core as mx
-        from transformers import WhisperForConditionalGeneration, WhisperProcessor
+        from mlx_whisper.convert import convert as mlx_convert
 
-        # 1. PyTorch-Modell von HuggingFace laden
-        log.info("  [1/3] Lade Modell von HuggingFace...")
-        processor = WhisperProcessor.from_pretrained(CH_MODEL_HF)
-        model = WhisperForConditionalGeneration.from_pretrained(CH_MODEL_HF)
-
-        # 2. Gewichte in MLX-Format konvertieren (numpy als Zwischenschritt)
-        log.info("  [2/3] Konvertiere Gewichte nach MLX...")
         CH_MODEL_LOCAL.mkdir(parents=True, exist_ok=True)
 
-        state_dict = model.state_dict()
-        mlx_weights = {}
-        for key, tensor in state_dict.items():
-            np_array = tensor.cpu().to(torch.float32).numpy()
-            mlx_weights[key] = mx.array(np_array)
-
-        # Gewichte speichern
-        weights_path = CH_MODEL_LOCAL / "weights.npz"
-        mx.savez(str(weights_path), **mlx_weights)
-
-        # 3. Config und Tokenizer speichern
-        log.info("  [3/3] Speichere Konfiguration...")
-        processor.save_pretrained(str(CH_MODEL_LOCAL))
-
-        # mlx_whisper erwartet OpenAI-Whisper-Feldnamen, nicht HuggingFace-Format.
-        # PEFT-spezifische Felder (z.B. activation_dropout) wuerden einen
-        # TypeError in ModelDimensions.__init__() ausloesen – deshalb nur die
-        # bekannten Standard-Whisper-Keys in config.json schreiben.
-        import json as _json
-        hf_cfg = model.config.to_dict()
-        mlx_cfg = {
-            "n_mels":       hf_cfg.get("num_mel_bins", 80),
-            "n_audio_ctx":  hf_cfg.get("max_source_positions", 1500),
-            "n_audio_state": hf_cfg.get("d_model", 1024),
-            "n_audio_head": hf_cfg.get("encoder_attention_heads", 16),
-            "n_audio_layer": hf_cfg.get("encoder_layers", 32),
-            "n_vocab":      hf_cfg.get("vocab_size", 51866),
-            "n_text_ctx":   hf_cfg.get("max_target_positions", 448),
-            "n_text_state": hf_cfg.get("d_model", 1024),
-            "n_text_head":  hf_cfg.get("decoder_attention_heads", 16),
-            "n_text_layer": hf_cfg.get("decoder_layers", 32),
-        }
-        (CH_MODEL_LOCAL / "config.json").write_text(
-            _json.dumps(mlx_cfg, indent=2), encoding="utf-8"
-        )
+        # mlx_whisper.convert uebernimmt das gesamte Key-Mapping
+        # (HuggingFace -> OpenAI-Whisper-Format) inkl. PEFT-Modellen.
+        log.info("  [1/1] Konvertiere mit mlx_whisper.convert (HF -> MLX)...")
+        mlx_convert(CH_MODEL_HF, str(CH_MODEL_LOCAL), dtype=mx.float16)
 
         log.info(f"  Konvertierung abgeschlossen! Modell unter: {CH_MODEL_LOCAL}")
         notify_macos("Meeting Protokollant", "CH-Modell erfolgreich konvertiert!")
@@ -216,7 +176,7 @@ def convert_ch_model_to_mlx() -> bool:
     except ImportError as e:
         missing = str(e).split("'")[-2] if "'" in str(e) else str(e)
         log.warning(f"  Konvertierung nicht moeglich: '{missing}' fehlt.")
-        log.warning(f"  Installieren mit: pip install transformers torch")
+        log.warning(f"  Installieren mit: pip install mlx-whisper transformers torch")
         log.warning(f"  Nutze Fallback-Modell: {FALLBACK_MODEL}")
         return False
     except Exception as e:
