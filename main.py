@@ -255,7 +255,9 @@ def convert_ch_model_to_mlx() -> bool:
         for hf_key, tensor in inner.state_dict().items():
             mlx_key = _hf_to_mlx_key(hf_key)
             if mlx_key:
-                np_arr = tensor.cpu().to(torch.float32).numpy()
+                # float16: Whisper-Standard fuer Inference (float32 wuerde
+                # dtype-Mismatch im Decoder ausloesen)
+                np_arr = tensor.cpu().to(torch.float16).numpy()
                 # Conv1d: PyTorch [C_out, C_in, k] -> MLX [C_out, k, C_in]
                 if hf_key in ("encoder.conv1.weight", "encoder.conv2.weight"):
                     np_arr = np_arr.transpose(0, 2, 1)
