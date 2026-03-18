@@ -183,10 +183,31 @@ def convert_ch_model_to_mlx() -> bool:
         weights_path = CH_MODEL_LOCAL / "weights.npz"
         mx.savez(str(weights_path), **mlx_weights)
 
-        # 3. Config und Tokenizer kopieren
+        # 3. Config und Tokenizer speichern
         log.info("  [3/3] Speichere Konfiguration...")
-        model.config.save_pretrained(str(CH_MODEL_LOCAL))
         processor.save_pretrained(str(CH_MODEL_LOCAL))
+
+        # mlx_whisper erwartet OpenAI-Whisper-Feldnamen, nicht HuggingFace-Format.
+        # PEFT-spezifische Felder (z.B. activation_dropout) wuerden einen
+        # TypeError in ModelDimensions.__init__() ausloesen – deshalb nur die
+        # bekannten Standard-Whisper-Keys in config.json schreiben.
+        import json as _json
+        hf_cfg = model.config.to_dict()
+        mlx_cfg = {
+            "n_mels":       hf_cfg.get("num_mel_bins", 80),
+            "n_audio_ctx":  hf_cfg.get("max_source_positions", 1500),
+            "n_audio_state": hf_cfg.get("d_model", 1024),
+            "n_audio_head": hf_cfg.get("encoder_attention_heads", 16),
+            "n_audio_layer": hf_cfg.get("encoder_layers", 32),
+            "n_vocab":      hf_cfg.get("vocab_size", 51866),
+            "n_text_ctx":   hf_cfg.get("max_target_positions", 448),
+            "n_text_state": hf_cfg.get("d_model", 1024),
+            "n_text_head":  hf_cfg.get("decoder_attention_heads", 16),
+            "n_text_layer": hf_cfg.get("decoder_layers", 32),
+        }
+        (CH_MODEL_LOCAL / "config.json").write_text(
+            _json.dumps(mlx_cfg, indent=2), encoding="utf-8"
+        )
 
         log.info(f"  Konvertierung abgeschlossen! Modell unter: {CH_MODEL_LOCAL}")
         notify_macos("Meeting Protokollant", "CH-Modell erfolgreich konvertiert!")
