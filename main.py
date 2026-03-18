@@ -151,8 +151,10 @@ def _hf_to_mlx_key(key: str) -> "str | None":
     import re
 
     # Top-level fixe Mappings
+    # Hinweis: encoder.embed_positions wird bewusst ausgelassen –
+    # mlx_whisper berechnet die Encoder-PE als feste Sinusoide (_positional_embedding)
+    # und speichert sie nicht als lernbaren Parameter.
     fixed = {
-        "encoder.embed_positions.weight": "encoder.positional_embedding",
         "encoder.layer_norm.weight":      "encoder.ln_post.weight",
         "encoder.layer_norm.bias":        "encoder.ln_post.bias",
         "decoder.embed_positions.weight": "decoder.positional_embedding",
