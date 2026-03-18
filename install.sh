@@ -28,7 +28,7 @@ OLLAMA_MODEL="mistral-nemo"
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 PYENV_ROOT="${PYENV_ROOT:-$HOME/.pyenv}"
 PYTHON_BIN="$PYENV_ROOT/versions/$PYTHON_VERSION/bin/python"
-DEFAULT_SSD_PATH="/Volumes/ExtSSD/WhisperSystem"
+DEFAULT_SSD_PATH="$(dirname "$REPO_DIR")/WhisperSystem"
 
 # --- Hilfsfunktionen ---
 step_num=0
@@ -140,7 +140,8 @@ fi
 
 # pyenv im aktuellen Script aktivieren
 export PYENV_ROOT
-export PATH="$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH"
+export PATH="$PYENV_ROOT/shims:$PATH"
+eval "$(pyenv init --path)" 2>/dev/null || true
 eval "$(pyenv init -)" 2>/dev/null || true
 
 # ==========================================
@@ -198,8 +199,8 @@ mkdir -p "$SSD_PATH"/{input,output,archive,temp,failed,models}
 success "Ordnerstruktur erstellt"
 
 # pyenv local Version setzen
-"$PYENV_ROOT/bin/pyenv" local "$PYTHON_VERSION" 2>/dev/null || \
-    (cd "$SSD_PATH" && "$PYENV_ROOT/bin/pyenv" local "$PYTHON_VERSION")
+pyenv local "$PYTHON_VERSION" 2>/dev/null || \
+    (cd "$SSD_PATH" && pyenv local "$PYTHON_VERSION")
 success ".python-version gesetzt"
 
 # ==========================================
