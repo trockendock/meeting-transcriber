@@ -105,6 +105,7 @@ Pyannote verwendet **gated Models** auf HuggingFace – du musst den Zugang einm
 1. **Zugangsbedingungen akzeptieren** (HuggingFace-Account erforderlich):
    - https://hf.co/pyannote/speaker-diarization-3.1 → „Access repository" klicken
    - https://hf.co/pyannote/segmentation-3.0 → „Access repository" klicken
+   - https://hf.co/pyannote/speaker-diarization-community-1 → „Access repository" klicken
 2. **Token erstellen**: https://hf.co/settings/tokens → „New token" → Typ: Read
 3. **Token in `.env` eintragen**:
    ```
