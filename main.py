@@ -406,6 +406,7 @@ def transcribe_audio(audio_path: Path) -> str:
             path_or_hf_repo=WHISPER_MODEL,
             language="de",
             word_timestamps=True,
+            fp16=False,  # Unser konvertiertes CH-Modell liefert float32 → kein dtype-Mismatch
         )
         return result.get("text", "")
 
