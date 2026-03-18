@@ -95,8 +95,24 @@ output/meeting_Protokoll.md
 | `SSD_PATH` | `/Volumes/ExtSSD/WhisperSystem` | Projektordner auf der SSD |
 | `WHISPER_MODEL` | `auto` | `auto` = CH-Modell mit Fallback auf Deutsch |
 | `OLLAMA_MODEL` | `mistral-nemo` | Modell für die Zusammenfassung |
-| `ENABLE_DIARIZATION` | `false` | Sprechererkennung aktivieren |
-| `HF_TOKEN` | - | HuggingFace Token (nur für Diarization) |
+| `ENABLE_DIARIZATION` | `false` | Sprechererkennung aktivieren (siehe unten) |
+| `HF_TOKEN` | - | HuggingFace Token (nur für Diarization, siehe unten) |
+
+### Sprechererkennung aktivieren (Pyannote)
+
+Pyannote verwendet **gated Models** auf HuggingFace – du musst den Zugang einmalig manuell beantragen:
+
+1. **Zugangsbedingungen akzeptieren** (HuggingFace-Account erforderlich):
+   - https://hf.co/pyannote/speaker-diarization-3.1 → „Access repository" klicken
+   - https://hf.co/pyannote/segmentation-3.0 → „Access repository" klicken
+2. **Token erstellen**: https://hf.co/settings/tokens → „New token" → Typ: Read
+3. **Token in `.env` eintragen**:
+   ```
+   ENABLE_DIARIZATION=true
+   HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxx
+   ```
+
+Ohne Token (oder ohne akzeptierte Bedingungen) läuft das System weiter – nur ohne Sprecher-Labels.
 
 ## Ordnerstruktur
 
