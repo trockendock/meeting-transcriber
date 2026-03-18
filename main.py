@@ -55,6 +55,16 @@ AUDIO_EXTENSIONS = (".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg", ".wma")
 MAX_RETRIES = 3
 RETRY_BASE_DELAY = 5  # Sekunden
 
+# Korrekturliste fuer haeufige Transkriptionsfehler bei Firmennamen / Fachbegriffen
+# Format in .env: TRANSCRIPT_CORRECTIONS=Mantelux:Montalux,Strahlhorn:Strahlhorn AG
+_raw_corrections = os.getenv("TRANSCRIPT_CORRECTIONS", "")
+TRANSCRIPT_CORRECTIONS: dict[str, str] = {}
+if _raw_corrections:
+    for pair in _raw_corrections.split(","):
+        if ":" in pair:
+            wrong, correct = pair.split(":", 1)
+            TRANSCRIPT_CORRECTIONS[wrong.strip()] = correct.strip()
+
 # Ordner erstellen
 for d in [INPUT_DIR, OUTPUT_DIR, TEMP_DIR, FAILED_DIR, ARCHIVE_DIR]:
     d.mkdir(parents=True, exist_ok=True)
@@ -411,6 +421,13 @@ def transcribe_audio(audio_path: Path) -> str:
         return result.get("text", "")
 
     text = retry_with_backoff(_transcribe, f"Transkription von {audio_path.name}")
+
+    # Korrekturliste anwenden (Firmennamen, Fachbegriffe)
+    if TRANSCRIPT_CORRECTIONS:
+        for wrong, correct in TRANSCRIPT_CORRECTIONS.items():
+            text = text.replace(wrong, correct)
+        log.info(f"Korrekturen angewendet: {list(TRANSCRIPT_CORRECTIONS.keys())}")
+
     log.info(f"Transkription abgeschlossen: {len(text)} Zeichen")
     return text
 
@@ -494,31 +511,25 @@ def summarize_with_ollama(text: str) -> str:
     log.info(f"Sende Transkript an Ollama ({OLLAMA_MODEL})...")
 
     system_instruction = (
-        "Du bist ein Protokollfuehrer in einem Schweizer Unternehmen. "
-        "Du erhaeltst ein Transkript und erstellst daraus ein strukturiertes Protokoll.\n\n"
-        "ABSOLUTE REGEL: Erfinde NIEMALS Informationen. "
-        "Schreibe ausschliesslich was im Transkript steht. "
-        "Wenn eine Information nicht im Transkript vorkommt, schreibe 'Nicht erwaehnt'. "
-        "Keine Annahmen, keine Ergaenzungen, keine Beispiele.\n\n"
-        "Beginne die Antwort mit:\n"
-        "TITEL: <kurzer beschreibender Titel, max 8 Woerter, nur aus dem Transkript-Inhalt>\n\n"
-        "Danach diese Abschnitte:\n\n"
+        "Du bist ein Protokollfuehrer in einem Schweizer Unternehmen.\n\n"
+        "REGELN (nicht in den Output schreiben):\n"
+        "- Erfinde NIEMALS Informationen. Nur was im Transkript steht.\n"
+        "- Leere Felder: verwende exakt die unten angegebenen Platzhaltertexte.\n"
+        "- Keine Erklaerungen, keine Beispiele, keine Anweisungen im Output.\n"
+        "- Schweizer Rechtschreibung. Waehrungen in CHF.\n\n"
+        "AUSGABEFORMAT:\n\n"
+        "TITEL: [max. 8 Woerter, beschreibend]\n\n"
         "## Thema\n"
-        "Worum ging es laut Transkript? Falls unklar: 'Nicht eindeutig erkennbar.'\n\n"
+        "[Was im Transkript besprochen wurde. Falls unklar: Nicht eindeutig erkennbar.]\n\n"
         "## Teilnehmer\n"
-        "Nur Personen die im Transkript explizit erwaehnt oder hoerbar sind. "
-        "Falls keine: 'Nicht erwaehnt.'\n\n"
+        "[Namen aus dem Transkript. Falls keine: Nicht erwaehnt.]\n\n"
         "## Zusammenfassung\n"
-        "Nur was tatsaechlich besprochen wurde. Falls zu wenig Inhalt: "
-        "'Das Transkript enthaelt zu wenig Inhalt fuer eine Zusammenfassung.'\n\n"
+        "[3-5 Saetze zu den besprochenen Punkten. Falls zu wenig Inhalt: "
+        "Das Transkript enthaelt zu wenig Inhalt fuer eine Zusammenfassung.]\n\n"
         "## Entscheidungen\n"
-        "Nur explizit beschlossene Punkte aus dem Transkript. "
-        "Falls keine: 'Keine Entscheidungen erwaehnt.'\n\n"
+        "[Beschlossene Punkte als Aufzaehlung. Falls keine: Keine Entscheidungen erwaehnt.]\n\n"
         "## Actionpoints\n"
-        "Nur explizit zugewiesene Aufgaben aus dem Transkript. Format:\n"
-        "- [ ] Person: Aufgabe bis Termin\n"
-        "Falls keine: 'Keine Actionpoints erwaehnt.'\n\n"
-        "Verwende Schweizer Rechtschreibung. Waehrungen in CHF."
+        "[Format: - [ ] Person: Aufgabe bis Termin. Falls keine: Keine Actionpoints erwaehnt.]"
     )
 
     def _summarize():
