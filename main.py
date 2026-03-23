@@ -51,7 +51,7 @@ CH_MODEL_HF = "Flurin17/whisper-large-v3-turbo-swiss-german"  # PyTorch-Quelle
 CH_MODEL_LOCAL = SSD_PATH / "models" / "ch-whisper-mlx"       # Lokaler MLX-Pfad
 FALLBACK_MODEL = "mlx-community/whisper-large-v3-turbo-german-f16"  # MLX-Fallback
 
-AUDIO_EXTENSIONS = (".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg", ".wma")
+AUDIO_EXTENSIONS = (".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg", ".wma", ".mp4")
 MAX_RETRIES = 3
 RETRY_BASE_DELAY = 5  # Sekunden
 
