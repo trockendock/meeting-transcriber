@@ -1,6 +1,12 @@
 # Meeting Transcriber
 
+[![Version](https://img.shields.io/badge/version-1.1.0-blue)](CHANGELOG.md)
+[![Platform](https://img.shields.io/badge/platform-macOS%20Apple%20Silicon-lightgrey)]()
+[![License](https://img.shields.io/badge/license-MIT-green)]()
+
 Lokales KI-System für automatische Meeting-Transkription und Protokollerstellung auf Apple Silicon Macs. Speziell optimiert für Schweizer Dialekte – transkribiert Schweizerdeutsch direkt ins Hochdeutsche. Läuft komplett offline - kein Byte verlässt das Gerät.
+
+> **Neu in 1.1.0:** macOS-Hintergrund-Dienst (`service.sh`), 2-stufige Pipeline (~30-40 % schneller), Retention-Janitor, MPS-beschleunigte Sprechererkennung, gefixte Sprecher-Zuordnung. Siehe [CHANGELOG.md](CHANGELOG.md).
 
 ## Was es tut
 
@@ -72,6 +78,34 @@ python main.py
 
 Beim ersten Start wird automatisch das Schweizerdeutsch-Modell ([Flurin17/whisper-large-v3-turbo-swiss-german](https://huggingface.co/Flurin17/whisper-large-v3-turbo-swiss-german)) heruntergeladen und ins MLX-Format konvertiert. Danach läuft alles offline.
 
+## Starten
+
+Drei Optionen, geordnet von minimal zu komfortabel:
+
+### 1. Doppelklick
+
+`Meeting Transcriber.command` doppelklicken. Öffnet ein Terminal-Fenster mit dem laufenden System. Beim Schließen des Fensters stoppt der Dienst.
+
+### 2. Als macOS-Dienst *(empfohlen)*
+
+Läuft still im Hintergrund, startet automatisch beim Login, startet nach Crash neu:
+
+```bash
+./service.sh install      # einmalig einrichten
+./service.sh status       # läuft?
+./service.sh logs         # live mitlesen
+./service.sh stop         # sauber stoppen (SIGTERM)
+./service.sh uninstall    # wieder entfernen
+```
+
+Der Installer bietet das Service-Setup am Ende automatisch an.
+
+### 3. Manuell
+
+```bash
+./start.sh                # startet Ollama + venv + main.py
+```
+
 ## Verwendung
 
 Audiodatei (MP3, WAV, M4A, AAC, FLAC) in den `input/`-Ordner kopieren. Das Protokoll erscheint automatisch in `output/`.
@@ -97,6 +131,20 @@ output/meeting_Protokoll.md
 | `OLLAMA_MODEL` | `mistral-nemo` | Modell für die Zusammenfassung |
 | `ENABLE_DIARIZATION` | `false` | Sprechererkennung aktivieren (siehe unten) |
 | `HF_TOKEN` | - | HuggingFace Token (nur für Diarization, siehe unten) |
+| `TRANSCRIPT_CORRECTIONS` | - | Komma-Liste `Falsch:Korrekt` für Wortkorrekturen (matcht nur ganze Wörter) |
+| `PIPELINE_PARALLEL` | `true` | 2-Stufen-Pipeline (Transkription parallel zu Zusammenfassung) |
+| `SUMMARIZE_QUEUE_MAX` | `2` | Max. Anzahl fertiger Transkripte im RAM (Backpressure) |
+| `ARCHIVE_RETENTION_DAYS` | `90` | Archiv automatisch aufräumen — `0` = aus |
+| `FAILED_RETENTION_DAYS` | `30` | `failed/` automatisch aufräumen — `0` = aus |
+| `RETENTION_SWEEP_HOURS` | `24` | Intervall des Retention-Janitors |
+
+### Performance & Skalierung
+
+- **Parallele Pipeline (`PIPELINE_PARALLEL=true`):** Stage 1 transkribiert Datei N+1, während Stage 2 Datei N per Ollama zusammenfasst. Bringt ~30-40 % Durchsatz. Bei <16 GB RAM auf `false` stellen.
+- **Watchdog ist nicht-blockierend:** Neue Dateien werden nur in die Queue gelegt; die eigentliche Arbeit erledigen dedizierte Worker-Threads. Mehrfach-Drops blockieren den Observer nicht.
+- **Crash-Recovery:** Ein `.processing`-Marker wird während der Verarbeitung erzeugt. Bleibt er nach einem Crash liegen, verschiebt der nächste Startup die Datei nach `failed/` statt sie endlos wiederzuversuchen.
+- **Log-Rotation:** `system_log.txt` wird bei 10 MB rotiert (5 Backups).
+- **Retention-Janitor:** Läuft alle `RETENTION_SWEEP_HOURS` und löscht `archive/`- und `failed/`-Dateien älter als das konfigurierte Limit.
 
 ### Sprechererkennung aktivieren (Pyannote)
 
@@ -144,9 +192,11 @@ WhisperSystem/
 
 Siehe [setup-guide.md](setup-guide.md) für:
 - Schritt-für-Schritt Installation
-- Automator / Launch Agent Konfiguration
-- Troubleshooting
+- Start-Optionen (Doppelklick, Service, manuell)
+- Troubleshooting (inkl. Service-Debugging)
 - Alternative Schweizerdeutsch-Modelle
+
+Änderungen pro Version: [CHANGELOG.md](CHANGELOG.md)
 
 ## Datenschutz
 

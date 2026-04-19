@@ -158,67 +158,51 @@ Das Skript erkennt die Datei automatisch, transkribiert sie und erstellt ein Pro
 
 ---
 
-## Schritt 5: One-Click Start (Automator)
+## Schritt 5: Starten
 
-Damit du nicht jedes Mal das Terminal oeffnen musst:
+Drei Wege, geordnet von minimal zu komfortabel. Alle drei führen zum gleichen
+Resultat – nur der Auto-Start-Komfort variiert.
 
-1. Oeffne **Automator** auf dem Mac
-2. Waehle **Neues Dokument** > **Programm**
-3. Suche **"Shell-Skript ausfuehren"** und ziehe es ins rechte Feld
-4. Kopiere diesen Code hinein (passe `ExtSSD` an!):
+### Option A: Doppelklick
+
+`Meeting Transcriber.command` im Finder doppelklicken. Öffnet ein
+Terminal-Fenster, in dem das Log live mitläuft. Beim Schließen des Fensters
+stoppt der Dienst.
+
+Passend für: gelegentliche Nutzung, Live-Einblick ins Log.
+
+### Option B: macOS-Dienst *(empfohlen)*
+
+Startet automatisch beim Login, läuft still im Hintergrund, startet nach
+Crash neu:
 
 ```bash
-# Sicherstellen dass Ollama laeuft
-open -a Ollama
-
-# 3 Sekunden warten bis Ollama bereit ist
-sleep 3
-
-# Meeting Protokollant starten
-/Volumes/ExtSSD/WhisperSystem/venv/bin/python3 \
-    /Volumes/ExtSSD/WhisperSystem/main.py \
-    >> /Volumes/ExtSSD/WhisperSystem/startup_debug.log 2>&1
+./service.sh install      # einmalig einrichten (fragt nicht nach)
+./service.sh status       # laeuft? PID, state, letzter Exit-Code
+./service.sh logs         # tail -F ueber stdout/stderr/system_log.txt
+./service.sh stop         # SIGTERM, sauberer Shutdown
+./service.sh restart
+./service.sh uninstall    # plist entfernen, agent entladen
 ```
 
-5. Speichere als **"Meeting Protokollant"** auf dem Schreibtisch oder im Dock
+Der Installer (`install.sh`) bietet das Service-Setup am Ende an.
 
-### Alternative: Launch Agent (automatisch bei Login)
+Unter der Haube: LaunchAgent in `~/Library/LaunchAgents/ch.trockendock.meetingtranscriber.plist`
+mit `KeepAlive.SuccessfulExit=false` + `ThrottleInterval=30` (Crash → Neustart
+nach 30 s, manueller Stop → bleibt gestoppt).
 
-Erstelle `~/Library/LaunchAgents/com.meeting-protokollant.plist`:
+Passend für: "einmal einrichten, nie wieder drüber nachdenken".
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.meeting-protokollant</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/Volumes/ExtSSD/WhisperSystem/venv/bin/python3</string>
-        <string>/Volumes/ExtSSD/WhisperSystem/main.py</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <false/>
-    <key>StandardOutPath</key>
-    <string>/Volumes/ExtSSD/WhisperSystem/launchd_out.log</string>
-    <key>StandardErrorPath</key>
-    <string>/Volumes/ExtSSD/WhisperSystem/launchd_err.log</string>
-    <key>EnvironmentVariables</key>
-    <dict>
-        <key>PATH</key>
-        <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
-    </dict>
-</dict>
-</plist>
-```
+### Option C: Manuell via Terminal
 
-Aktivieren:
 ```bash
-launchctl load ~/Library/LaunchAgents/com.meeting-protokollant.plist
+./start.sh                # startet Ollama + venv + main.py
+# oder direkt:
+source "$SSD_PATH/venv/bin/activate"
+python "$SSD_PATH/main.py"
 ```
+
+Passend für: Debugging, Development.
 
 ---
 
@@ -228,17 +212,35 @@ Nach dem Setup sieht deine SSD so aus:
 
 ```
 /Volumes/ExtSSD/WhisperSystem/
-    .env                    # Deine Konfiguration
-    .env.example            # Vorlage
-    main.py                 # Das Hauptskript
-    venv/                   # Python-Umgebung
-    system_log.txt          # Logdatei
-    processed_files.json    # Liste verarbeiteter Dateien
-    input/                  # Audiodateien hier reinlegen
-    output/                 # Fertige Protokolle
-    archive/                # Verarbeitete Audiodateien
-    temp/                   # Zwischendateien (werden aufgeraeumt)
-    failed/                 # Fehlgeschlagene Dateien
+    .env                        # Deine Konfiguration
+    .env.example                # Vorlage
+    main.py                     # Das Hauptskript
+    venv/                       # Python-Umgebung
+    models/ch-whisper-mlx/      # Konvertiertes CH-Whisper-Modell
+    system_log.txt              # Rotiert bei 10 MB (5 Backups)
+    service_stdout.log          # Nur bei Service-Betrieb
+    service_stderr.log          # Nur bei Service-Betrieb
+    processed_files.json        # Liste verarbeiteter Dateien
+    input/                      # Audiodateien hier reinlegen
+    output/                     # Fertige Protokolle
+    archive/                    # Verarbeitete Audiodateien (auto-retention)
+    temp/                       # Zwischendateien (werden aufgeraeumt)
+    failed/                     # Fehlgeschlagene Dateien (auto-retention)
+```
+
+Im Git-Repository (dort wo du `./install.sh` aufrufst):
+
+```
+meeting-transcriber/
+    install.sh                  # Setup-Installer
+    start.sh                    # manueller Start
+    service.sh                  # LaunchAgent-Manager
+    Meeting Transcriber.command # Doppelklick-Starter
+    main.py                     # Quelle (wird beim install kopiert)
+    .env.example
+    README.md
+    setup-guide.md
+    CHANGELOG.md
 ```
 
 ---
@@ -306,12 +308,33 @@ Aber fuer beste Audio-Kompatibilitaet sollte FFmpeg installiert sein.
 
 ### Logs einsehen
 ```bash
-# Echtzeit-Log
+# App-Log (Main-Output)
 tail -f /Volumes/ExtSSD/WhisperSystem/system_log.txt
 
-# Automator-Debug-Log
-cat /Volumes/ExtSSD/WhisperSystem/startup_debug.log
+# Bei Service-Betrieb zusaetzlich:
+tail -f /Volumes/ExtSSD/WhisperSystem/service_stderr.log
+
+# Komfortabel: alle Logs gleichzeitig
+./service.sh logs
 ```
+
+### Service startet nicht / bleibt nach Crash nicht oben
+```bash
+# Detailierter State des Agents
+launchctl print "gui/$(id -u)/ch.trockendock.meetingtranscriber"
+
+# Komplett neu laden
+./service.sh uninstall
+./service.sh install
+
+# Manuelles Debug: start.sh direkt ausfuehren, um Fehler zu sehen
+./start.sh
+```
+
+Typische Ursachen:
+- SSD nicht gemountet (Agent startet, `start.sh` bricht ab, Neustart nach 30 s)
+- Ollama.app nicht erreichbar (Gatekeeper hat sie beim ersten Start nicht zugelassen)
+- `.env` fehlt im Repo-Ordner (hat `start.sh` keinen `SSD_PATH`)
 
 ---
 

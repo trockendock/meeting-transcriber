@@ -395,3 +395,27 @@ echo -e "  ${BOLD}Audiodateien ablegen in:${RESET}"
 echo -e "    $SSD_PATH/input/"
 echo ""
 echo -e "${GREEN}${BOLD}================================================${RESET}"
+echo ""
+
+# ==========================================
+# Optional: als macOS-Dienst einrichten
+# ==========================================
+if [ -x "$REPO_DIR/service.sh" ]; then
+    echo -e "${BOLD}Automatisch beim Login starten?${RESET}"
+    echo -e "  Richtet einen LaunchAgent ein, der im Hintergrund laeuft und"
+    echo -e "  bei jedem Login automatisch startet. Stoppen/Entfernen jederzeit"
+    echo -e "  per ${BOLD}./service.sh stop${RESET} bzw. ${BOLD}./service.sh uninstall${RESET}."
+    echo -n "  Einrichten? [j/N]: "
+    read -r SETUP_SERVICE
+    if [[ "$SETUP_SERVICE" =~ ^[jJyY]$ ]]; then
+        # start.sh muss existieren und ausfuehrbar sein, damit der Agent funktioniert
+        if [ ! -x "$REPO_DIR/start.sh" ]; then
+            warn "start.sh fehlt oder ist nicht ausfuehrbar -- Service-Setup uebersprungen."
+        else
+            "$REPO_DIR/service.sh" install
+        fi
+    else
+        echo -e "${DIM}[SKIP]${RESET} Service-Setup uebersprungen."
+        echo -e "  Spaeter nachholen mit: ${BOLD}./service.sh install${RESET}"
+    fi
+fi
