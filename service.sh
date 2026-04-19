@@ -44,8 +44,14 @@ PLIST_PATH="$PLIST_DIR/$LABEL.plist"
 DOMAIN="gui/$(id -u)"
 SERVICE_TARGET="$DOMAIN/$LABEL"
 
-# SSD_PATH aus .env lesen (gleiche Logik wie start.sh)
+# SSD_PATH bestimmen:
+# 1. Aus Umgebung (erlaubt Override per   SSD_PATH=... ./service.sh install)
+# 2. Aus .env im Repo-Ordner
+# 3. Fallback
 load_ssd_path() {
+    if [[ -n "${SSD_PATH:-}" ]]; then
+        return 0
+    fi
     if [[ -f "$SCRIPT_DIR/.env" ]]; then
         SSD_PATH="$(grep -E '^SSD_PATH=' "$SCRIPT_DIR/.env" 2>/dev/null | head -1 | cut -d'=' -f2- || true)"
     fi

@@ -321,6 +321,22 @@ ENVEOF
     fi
 fi
 
+# Repo-level .env synchronisieren (wird von start.sh und service.sh gelesen,
+# um SSD_PATH zu finden). Enthaelt nur den Zeiger, nicht die volle Config.
+REPO_ENV="$REPO_DIR/.env"
+if [ -f "$REPO_ENV" ]; then
+    # Bestehende SSD_PATH-Zeile ersetzen (BSD sed braucht -i '')
+    if grep -qE '^SSD_PATH=' "$REPO_ENV"; then
+        sed -i '' "s|^SSD_PATH=.*|SSD_PATH=$SSD_PATH|" "$REPO_ENV"
+    else
+        echo "SSD_PATH=$SSD_PATH" >> "$REPO_ENV"
+    fi
+    success "Repo-.env aktualisiert: SSD_PATH=$SSD_PATH"
+else
+    echo "SSD_PATH=$SSD_PATH" > "$REPO_ENV"
+    success "Repo-.env erstellt: SSD_PATH=$SSD_PATH"
+fi
+
 # ==========================================
 # Schritt 11: Ollama starten und Modell laden
 # ==========================================

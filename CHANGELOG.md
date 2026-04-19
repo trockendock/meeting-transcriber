@@ -4,6 +4,23 @@ Alle bemerkenswerten Änderungen an diesem Projekt.
 Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung folgt [SemVer](https://semver.org/lang/de/).
 
+## [1.1.1] – 2026-04-19
+
+Hotfix: `install.sh` synchronisiert jetzt die Repo-`.env` mit dem
+tatsächlichen `SSD_PATH`, und `service.sh` respektiert `SSD_PATH` als
+Env-Var-Override.
+
+### Behoben
+
+- `install.sh` schreibt `SSD_PATH` nun zusätzlich in `$REPO_DIR/.env`
+  (vorher nur in `$SSD_PATH/.env`). `start.sh` und `service.sh` lesen
+  aber `$REPO_DIR/.env` — Folge: nach einem Install mit geändertem
+  SSD-Pfad rannte `service.sh install` mit dem alten/Default-Pfad und
+  scheiterte an `mkdir: Permission denied`.
+- `service.sh load_ssd_path` überschrieb eine bereits gesetzte
+  `SSD_PATH`-Env-Var. Jetzt: Env-Var hat Vorrang, dann `.env`, dann
+  Fallback. Erlaubt Ad-hoc-Override: `SSD_PATH=/path ./service.sh install`.
+
 ## [1.1.0] – 2026-04-19
 
 Grosses Refactoring: Performance, Stabilität und Betrieb. Abwärtskompatibel –
